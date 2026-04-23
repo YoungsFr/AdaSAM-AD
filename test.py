@@ -19,44 +19,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-
-def save_visualization(image, mask_gt, mask_pred_raw, save_path, name):
-    # 1. 基础图像处理
-    img = image.permute(1, 2, 0).cpu().numpy()
-    img = (img - img.min()) / (img.max() - img.min() + 1e-5) * 255
-    img = img.astype(np.uint8)
-    
-    # 2. 获取概率图和二值预测图
-    prob_map = torch.sigmoid(mask_pred_raw).squeeze().cpu().numpy()
-    gt = (mask_gt.squeeze().cpu().numpy() > 0.5).astype(np.uint8)
-    pred_binary = (prob_map > 0.5).astype(np.uint8)
-    
-    # 3. 计算“认反了”的像素 (对应分布图两端的重叠区)
-    # FN (红色分布在0附近的像素): 真实是息肉(1)，但模型打分极低(<0.1)
-    fn_mask = (gt == 1) & (prob_map < 0.1)
-    # FP (蓝色分布在1附近的像素): 真实是背景(0)，但模型打分极高(>0.9)
-    fp_mask = (gt == 0) & (prob_map > 0.9)
-
-    # 4. 生成误差诊断图 (Error Diagnosis)
-    # 在原图基础上，将 FN 涂为蓝色，FP 涂为绿色
-    error_diag = img.copy()
-    error_diag[fn_mask] = [0, 0, 255]  # 漏诊 (Blue) - BGR格式下OpenCV保存
-    error_diag[fp_mask] = [0, 255, 0]  # 误报 (Green)
-
-    # 5. 准备拼接
-    gt_color = cv2.cvtColor(gt * 255, cv2.COLOR_GRAY2BGR)
-    pred_color = cv2.cvtColor(pred_binary * 255, cv2.COLOR_GRAY2BGR)
-    img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR) # 统一转为BGR供cv2保存
-    
-    # 横向拼接: 原图 | 真值 | 预测图 | 误差诊断
-    combined = np.hstack([img_bgr, gt_color, pred_color, cv2.cvtColor(error_diag, cv2.COLOR_RGB2BGR)])
-    
-    cv2.imwrite(os.path.join(save_path, f"{name}_diag.png"), pred_color)
-    # print(name)
-
-
-
-
 def test(args, data_path, sam2_model, index):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
@@ -104,7 +66,6 @@ def test(args, data_path, sam2_model, index):
             all_mae.append(mae_score)
             all_me.append(me_score)
 
-            save_visualization(image[0], mask_gt[0], masks[0][0], save_dir, image_path)
 
     mean_iou = sum(all_iou) / len(all_iou)
     mean_dice = sum(all_dice) / len(all_dice)

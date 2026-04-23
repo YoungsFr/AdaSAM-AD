@@ -14,7 +14,7 @@ numpy==2.3.4
 pillow==10.2.0
 matplotlib==3.10.8
 
-##SAM-2 Installation
+## SAM-2 Installation
 
 Clone and install SAM-2 manually:
 

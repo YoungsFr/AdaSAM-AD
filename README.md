@@ -36,6 +36,8 @@ SAM-2 Installation
 3.pip install -e .
 ```
 
+***Notice***: Please utilize the built-in configs provided by the SAM2 project itself.
+
 ## Training
 
 To train the model(s) in the paper, please modify the relevant hyperparameters run in [train.py](train.py) this command:
